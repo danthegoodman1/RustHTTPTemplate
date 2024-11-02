@@ -1,4 +1,4 @@
-use citizenstats_server::start;
+use rust_http_template::start;
 use tokio::signal;
 use tracing::{level_filters, Level};
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, Layer};
