@@ -7,7 +7,7 @@ pub mod helloworld {
 use helloworld::greeter_server::Greeter;
 use helloworld::{HelloReply, HelloRequest};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MyGreeter {}
 
 #[tonic::async_trait]

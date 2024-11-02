@@ -20,7 +20,7 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     tokio::select! {
-        _ = start("0.0.0.0:8080") => {},
+        _ = start("0.0.0.0:8080", "0.0.0.0:50051".parse().unwrap()) => {},
         _ = signal::ctrl_c() => {
             println!("Received Ctrl-C, shutting down...");
         }

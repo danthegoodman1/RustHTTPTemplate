@@ -1,6 +1,7 @@
 use axum::middleware;
 use axum::routing::post;
-use grpc::helloworld::helloworld::greeter_server;
+use grpc::hello_world::helloworld::greeter_server;
+use std::net::SocketAddr;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -12,7 +13,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use tower::{buffer::BufferLayer, steer::Steer, BoxError, ServiceBuilder, ServiceExt};
+use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
 use tracing::{error, info};
 
 mod grpc;
@@ -25,17 +26,14 @@ struct AppState {
     rate_limiter: Arc<RateLimiter>,
 }
 
-pub async fn start(addr: &str) {
+pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
     let state = AppState {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
     };
 
-    let greeter_service = grpc::helloworld::MyGreeter::default();
-    let grpc_service = Server::builder()
-        .add_service(greeter_server::GreeterServer::new(greeter_service))
-        .into_service()
-        .map_response(|r| axum::response::Response::new(r.into_body()))
-        .boxed_clone();
+    let greeter_service = grpc::hello_world::MyGreeter::default();
+    let grpc_service =
+        Server::builder().add_service(greeter_server::GreeterServer::new(greeter_service));
 
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
@@ -63,29 +61,12 @@ pub async fn start(addr: &str) {
                     ip_rate_limiter,
                 )),
         )
-        .with_state(state)
-        .into_make_service();
+        .with_state(state);
 
-    let http_grpc = Steer::new(
-        vec![app, grpc_service],
-        |req: &axum::http::Request<_>, _svcs: &[_]| {
-            if req
-                .headers()
-                .get(axum::http::header::CONTENT_TYPE)
-                .map(|v| v.as_bytes())
-                == Some(b"application/grpc")
-            {
-                1
-            } else {
-                0
-            }
-        },
-    );
-
-    info!("Starting on {}", addr);
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-
-    axum::serve(listener, http_grpc).await.unwrap();
+    info!("Starting on http://{} and grpc://{}", http_addr, grpc_addr);
+    let axum_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
+    axum::serve(axum_listener, app).await.unwrap();
+    grpc_service.serve(grpc_addr).await.unwrap();
 }
 
 // Make our own error that wraps `anyhow::Error`.

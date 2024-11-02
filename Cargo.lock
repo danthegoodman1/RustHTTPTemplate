@@ -1080,6 +1080,7 @@ dependencies = [
  "axum-extra",
  "futures-util",
  "hyper",
+ "prost",
  "reqwest",
  "serde",
  "serde_json",
