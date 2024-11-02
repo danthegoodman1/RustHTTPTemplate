@@ -11,7 +11,6 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde::{Deserialize, Serialize};
 use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
 use tracing::{error, info};
 
