@@ -1,4 +1,5 @@
 use axum::middleware;
+use axum::routing::{get, post};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -28,7 +29,7 @@ pub async fn start(addr: &str) {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
     };
     let app = axum::Router::new()
-        // .route("/", get(routes::get::get_root))
+        .route("/echo/json", post(routes::echo_json))
         // .route(
         //     "/:key",
         //     get(routes::get::get_key).post(routes::post::write_key),
