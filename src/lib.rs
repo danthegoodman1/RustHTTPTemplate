@@ -1,5 +1,5 @@
+use axum::middleware;
 use axum::routing::post;
-use axum::{middleware, ServiceExt};
 use grpc::helloworld::helloworld::greeter_server;
 
 use std::sync::Arc;
@@ -35,8 +35,7 @@ pub async fn start(addr: &str) {
         .add_service(greeter_server::GreeterServer::new(greeter_service))
         .into_service()
         .map_response(|r| axum::response::Response::new(r.into_body()))
-        .boxed_clone()
-        .into_make_service();
+        .boxed_clone();
 
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
