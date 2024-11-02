@@ -1,9 +1,11 @@
 use axum::middleware;
-use axum::routing::{get, post};
-use std::collections::HashMap;
+use axum::routing::post;
+use grpc::hello_world::helloworld::greeter_server;
+use std::net::SocketAddr;
+
 use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use std::time::Duration;
+use tonic::transport::Server;
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -14,6 +16,7 @@ use axum::{
 use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
 use tracing::{error, info};
 
+pub mod grpc;
 mod rate_limiter;
 mod routes;
 use rate_limiter::{ip_rate_limiter, RateLimiter};
@@ -23,10 +26,15 @@ struct AppState {
     rate_limiter: Arc<RateLimiter>,
 }
 
-pub async fn start(addr: &str) {
+pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
     let state = AppState {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
     };
+
+    let greeter_service = grpc::hello_world::MyGreeter::default();
+    let grpc_service =
+        Server::builder().add_service(greeter_server::GreeterServer::new(greeter_service));
+
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
         // .route(
@@ -55,10 +63,15 @@ pub async fn start(addr: &str) {
         )
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    info!("Starting on http://{} and grpc://{}", http_addr, grpc_addr);
+    let axum_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
+    let axum_server = axum::serve(axum_listener, app);
+    let grpc_server = grpc_service.serve(grpc_addr);
 
-    info!("Starting on {}", addr);
-    axum::serve(listener, app).await.unwrap();
+    tokio::select! {
+        _ = axum_server => {},
+        _ = grpc_server => {},
+    }
 }
 
 // Make our own error that wraps `anyhow::Error`.

@@ -14,13 +14,17 @@ async fn main() {
             .with_span_events(FmtSpan::CLOSE)
             .with_target(false)
             // .json()
-            .with_filter(level_filters::LevelFilter::from_level(Level::DEBUG)),
+            .with_filter(
+                tracing_subscriber::filter::Targets::new()
+                    .with_target("h2", Level::INFO) // filter out h2 logs
+                    .with_default(Level::DEBUG),
+            ),
     );
 
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     tokio::select! {
-        _ = start("0.0.0.0:8080") => {},
+        _ = start("0.0.0.0:8080", "0.0.0.0:50051".parse().unwrap()) => {},
         _ = signal::ctrl_c() => {
             println!("Received Ctrl-C, shutting down...");
         }
