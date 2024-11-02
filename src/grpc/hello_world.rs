@@ -6,6 +6,7 @@ pub mod helloworld {
 
 use helloworld::greeter_server::Greeter;
 use helloworld::{HelloReply, HelloRequest};
+use tracing::debug;
 
 #[derive(Default, Debug)]
 pub struct MyGreeter {}
@@ -17,7 +18,7 @@ impl Greeter for MyGreeter {
         request: Request<HelloRequest>, // Accept request of type HelloRequest
     ) -> Result<Response<HelloReply>, Status> {
         // Return an instance of type HelloReply
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = HelloReply {
             message: format!("Hello {}!", request.into_inner().name), // We must use .into_inner() as the fields of gRPC requests and responses are private
