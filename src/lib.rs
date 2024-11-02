@@ -2,7 +2,6 @@ use axum::middleware;
 use axum::routing::post;
 use grpc::hello_world::helloworld::greeter_server;
 use std::net::SocketAddr;
-use tokio::signal;
 
 use std::sync::Arc;
 use std::time::Duration;
