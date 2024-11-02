@@ -16,7 +16,7 @@ use axum::{
 use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
 use tracing::{error, info};
 
-mod grpc;
+pub mod grpc;
 mod rate_limiter;
 mod routes;
 use rate_limiter::{ip_rate_limiter, RateLimiter};
@@ -65,8 +65,13 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
 
     info!("Starting on http://{} and grpc://{}", http_addr, grpc_addr);
     let axum_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
-    axum::serve(axum_listener, app).await.unwrap();
-    grpc_service.serve(grpc_addr).await.unwrap();
+    let axum_server = axum::serve(axum_listener, app);
+    let grpc_server = grpc_service.serve(grpc_addr);
+
+    tokio::select! {
+        _ = axum_server => {},
+        _ = grpc_server => {},
+    }
 }
 
 // Make our own error that wraps `anyhow::Error`.
