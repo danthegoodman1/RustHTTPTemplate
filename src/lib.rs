@@ -2,6 +2,7 @@ use axum::middleware;
 use axum::routing::post;
 use grpc::hello_world::helloworld::greeter_server;
 use std::net::SocketAddr;
+use tokio::signal;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -65,13 +66,21 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
 
     info!("Starting on http://{} and grpc://{}", http_addr, grpc_addr);
     let axum_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
-    let axum_server = axum::serve(axum_listener, app);
-    let grpc_server = grpc_service.serve(grpc_addr);
 
-    tokio::select! {
-        _ = axum_server => {},
-        _ = grpc_server => {},
-    }
+    let axum_server = axum::serve(axum_listener, app).with_graceful_shutdown(async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+        info!("Received shutdown signal");
+    });
+    let grpc_server = grpc_service.serve_with_shutdown(grpc_addr, async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+        info!("Received shutdown signal");
+    });
+
+    _ = tokio::join!(axum_server, grpc_server);
 }
 
 // Make our own error that wraps `anyhow::Error`.

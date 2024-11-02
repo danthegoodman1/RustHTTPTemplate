@@ -1,6 +1,6 @@
 use rust_http_template::start;
 use tokio::signal;
-use tracing::{level_filters, Level};
+use tracing::{debug, warn, Level};
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, Layer};
 
 #[tokio::main]
@@ -25,8 +25,14 @@ async fn main() {
 
     tokio::select! {
         _ = start("0.0.0.0:8080", "0.0.0.0:50051".parse().unwrap()) => {},
-        _ = signal::ctrl_c() => {
-            println!("Received Ctrl-C, shutting down...");
+        _ = shutdown_signal() => {
+            warn!("Shutdown timer completed, terminating...");
         }
     }
+}
+
+async fn shutdown_signal() {
+    signal::ctrl_c().await.expect("Failed to listen for ctrl-c");
+    debug!("Received Ctrl-C, starting 30s shutdown timer...");
+    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
 }
