@@ -7,7 +7,6 @@ edition = "2021"
 anyhow = "1.0.91"
 axum = "0.7.7"
 axum-extra = "0.9.4"
-reqwest = "0.12.9"
 serde = { version = "1.0.214", features = ["serde_derive"] }
 serde_json = "1.0.132"
 thiserror = "1.0.65"
@@ -20,6 +19,11 @@ tower-http = { version = "0.5.0", features = ["trace"] }
 futures-util = "0.3"
 hyper = { version = "1.5.0", features = ["server"] }
 prost = "0.13.3"
+futures = "0.3.31"
+tokio-stream = "0.1.17"
 
 [build-dependencies]
 tonic-build = "0.12.3"
+
+[dev-dependencies]
+reqwest = { version = "0.12.9", features = ["json", "stream"] }

@@ -1,5 +1,5 @@
-use axum::middleware;
 use axum::routing::post;
+use axum::{middleware, routing::get};
 use grpc::hello_world::helloworld::greeter_server;
 use std::net::SocketAddr;
 
@@ -37,6 +37,8 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
 
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
+        .route("/sse", get(routes::sse_res))
+        .route("/stream", get(routes::stream_res))
         // .route(
         //     "/:key",
         //     get(routes::get::get_key).post(routes::post::write_key),
