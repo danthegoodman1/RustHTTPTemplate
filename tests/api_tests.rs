@@ -63,7 +63,7 @@ async fn test_stream_endpoint() {
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get("content-type").unwrap(),
-        "text/event-stream"
+        "application/octet-stream"
     );
 
     let body = response.text().await.unwrap();
