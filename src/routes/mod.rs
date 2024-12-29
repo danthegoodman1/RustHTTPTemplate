@@ -33,7 +33,7 @@ pub async fn stream_res() -> impl IntoResponse {
 
     // Convert the stream into a response
     axum::response::Response::builder()
-        .header("Content-Type", "text/event-stream")
+        .header("Content-Type", "application/octet-stream")
         .body(axum::body::Body::from_stream(s))
         .unwrap()
 }
