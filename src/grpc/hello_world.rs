@@ -1,3 +1,5 @@
+use futures::stream::{self, StreamExt};
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 pub mod helloworld {
@@ -25,5 +27,33 @@ impl Greeter for MyGreeter {
         };
 
         Ok(Response::new(reply)) // Send back our formatted greeting
+    }
+
+    type StreamHelloStream = ReceiverStream<Result<HelloReply, Status>>;
+
+    async fn stream_hello(
+        &self,
+        request: Request<tonic::Streaming<HelloRequest>>,
+    ) -> Result<Response<Self::StreamHelloStream>, Status> {
+        let mut stream = request.into_inner();
+        let (tx, rx) = tokio::sync::mpsc::channel(4);
+
+        // Spawn a task to process the incoming stream
+        let mut i = 0;
+        tokio::spawn(async move {
+            while let Some(req) = stream.next().await {
+                if let Ok(request) = req {
+                    println!("Sending message {} to channel", i);
+                    tx.send(Ok(HelloReply {
+                        message: format!("Hello {}! - {}", request.name, i),
+                    }))
+                    .await
+                    .unwrap();
+                    i += 1;
+                }
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
