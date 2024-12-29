@@ -38,6 +38,7 @@ async fn test_sse_endpoint() {
         response.headers().get("content-type").unwrap(),
         "text/event-stream"
     );
+    assert_eq!(response.headers().get("content-length"), None); // No content length because it's a stream
 
     let mut body = response.bytes_stream();
     let mut accumulated = String::new();
