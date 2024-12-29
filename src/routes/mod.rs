@@ -11,12 +11,13 @@ use tokio_stream::StreamExt;
 
 pub async fn sse_res() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     // Create a stream that yields bytes every 100ms
-    let s =
-        stream::iter(vec![Bytes::from("Hello, World!\n")].into_iter().map(|x| {
-            Ok::<_, Infallible>(Event::default().data(String::from_utf8_lossy(x.as_ref())))
-        }))
-        .throttle(Duration::from_millis(100))
-        .take(10); // Limit to 10 messages
+    let s = stream::iter(
+        vec![Bytes::from("Hello, World!\n")]
+            .into_iter()
+            .map(|x| Ok(Event::default().data(String::from_utf8_lossy(x.as_ref())))),
+    )
+    .throttle(Duration::from_millis(100))
+    .take(10); // Limit to 10 messages
 
     // Convert the stream into a response
     axum::response::sse::Sse::new(s)
