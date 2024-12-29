@@ -46,10 +46,18 @@ async fn test_sse_endpoint() {
     while let Some(chunk) = body.next().await {
         let chunk = chunk.unwrap();
         let text = String::from_utf8_lossy(&chunk);
-        accumulated.push_str(&text);
+        println!("Raw chunk: {:?}", text);
+        // Process each line separately
+        for line in text.lines() {
+            if let Some(content) = line.strip_prefix("data: ") {
+                println!("Stripped content: {:?}", content);
+                accumulated.push_str(content);
+            }
+        }
     }
 
-    assert!(accumulated.contains("data: Hello, World!"));
+    println!("Final accumulated: {:?}", accumulated);
+    assert!(accumulated.contains("Hello, World!"));
 }
 
 #[tokio::test]
