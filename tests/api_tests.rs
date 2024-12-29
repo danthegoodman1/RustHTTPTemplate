@@ -65,6 +65,7 @@ async fn test_stream_endpoint() {
         response.headers().get("content-type").unwrap(),
         "application/octet-stream"
     );
+    assert_eq!(response.headers().get("content-length"), None); // No content length because it's a stream
 
     let body = response.text().await.unwrap();
     assert_eq!(body, "Hello, World!\n");
