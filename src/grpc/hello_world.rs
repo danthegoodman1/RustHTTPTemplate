@@ -1,4 +1,5 @@
 use futures::stream::{self, StreamExt};
+use prost::Message;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -22,9 +23,15 @@ impl Greeter for MyGreeter {
         // Return an instance of type HelloReply
         debug!("Got a request: {:?}", request);
 
+        let req_inner = request.into_inner();
+
         let reply = HelloReply {
-            message: format!("Hello {}!", request.into_inner().name), // We must use .into_inner() as the fields of gRPC requests and responses are private
+            message: format!("Hello {}!", req_inner.name), // We must use .into_inner() as the fields of gRPC requests and responses are private
         };
+
+        let bytes = req_inner.encode_to_vec();
+        let reconstructed = HelloRequest::decode(&mut &bytes[..]).unwrap();
+        println!("Reconstructed: {:?}", reconstructed);
 
         Ok(Response::new(reply)) // Send back our formatted greeting
     }
