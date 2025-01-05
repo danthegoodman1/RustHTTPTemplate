@@ -40,7 +40,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         .route("/sse", get(routes::sse_res))
         .route("/stream", get(routes::stream_res))
         // .route(
-        //     "/:key",
+        //     "/{key}",
         //     get(routes::get::get_key).post(routes::post::write_key),
         // )
         .layer(
