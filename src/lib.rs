@@ -37,6 +37,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
 
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
+        .route("/echo/json_extractor", post(routes::echo_json_extractor))
         .route("/sse", get(routes::sse_res))
         .route("/stream", get(routes::stream_res))
         // .route(
@@ -89,6 +90,7 @@ pub enum AppError {
     Anyhow(anyhow::Error),
     CustomCode(anyhow::Error, axum::http::StatusCode),
     RateLimited(anyhow::Error),
+    ValidationError(validator::ValidationErrors),
 }
 
 // Tell axum how to convert `AppError` into a response.
@@ -104,6 +106,9 @@ impl IntoResponse for AppError {
                 StatusCode::TOO_MANY_REQUESTS,
                 format!("Rate limit exceeded: {}", e),
             ),
+            AppError::ValidationError(e) => {
+                (StatusCode::BAD_REQUEST, format!("Validation error: {}", e))
+            }
         }
         .into_response()
     }

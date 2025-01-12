@@ -79,3 +79,48 @@ async fn test_stream_endpoint() {
     let body = response.text().await.unwrap();
     assert_eq!(body, "Hello, World!\n");
 }
+
+#[tokio::test]
+async fn test_echo_json_extractor() {
+    let client = Client::new();
+
+    // Test valid payload
+    let valid_payload = json!({
+        "name": "Alice"
+    });
+    let response = client
+        .post(format!("{}/echo/json_extractor", BASE_URL))
+        .json(&valid_payload)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+    let response_json = response.json::<serde_json::Value>().await.unwrap();
+    assert_eq!(response_json, valid_payload);
+
+    // Test invalid payload (name too short)
+    let invalid_payload = json!({
+        "name": "Ab"
+    });
+    let response = client
+        .post(format!("{}/echo/json_extractor", BASE_URL))
+        .json(&invalid_payload)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 400); // Unprocessable Entity
+    println!("Response body: {:?}", response.text().await.unwrap());
+
+    // Test invalid payload (name too long)
+    let invalid_payload = json!({
+        "name": "ThisNameIsTooLong"
+    });
+    let response = client
+        .post(format!("{}/echo/json_extractor", BASE_URL))
+        .json(&invalid_payload)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 400);
+    println!("Response body: {:?}", response.text().await.unwrap());
+}
