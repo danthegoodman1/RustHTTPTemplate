@@ -9,6 +9,8 @@ use std::convert::Infallible;
 use std::time::Duration;
 use tokio_stream::StreamExt;
 
+use axum::{extract::Request, http::StatusCode};
+
 pub async fn sse_res() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     // Create a stream that yields bytes every 100ms
 
@@ -42,4 +44,28 @@ pub async fn stream_res() -> impl IntoResponse {
         .header("Content-Type", "application/octet-stream")
         .body(axum::body::Body::from_stream(s))
         .unwrap()
+}
+
+pub async fn stream_handler(request: Request) -> Result<String, (StatusCode, String)> {
+    // Convert request body into a stream
+    let body_stream = request.into_body().into_data_stream();
+
+    // Collect all chunks into a vector
+    let chunks: Vec<_> = body_stream
+        .map(|result| {
+            result.map_err(|err| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to read stream: {}", err),
+                )
+            })
+        })
+        .collect::<Result<Vec<Bytes>, _>>()
+        .await?;
+
+    // Concatenate all chunks and convert to string
+    let full_body = chunks.concat();
+    println!("full_body: {:?}", String::from_utf8(full_body.to_vec()));
+    String::from_utf8(full_body.to_vec())
+        .map_err(|err| (StatusCode::BAD_REQUEST, format!("Invalid UTF-8: {}", err)))
 }

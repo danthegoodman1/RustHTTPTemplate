@@ -124,3 +124,20 @@ async fn test_echo_json_extractor() {
     assert_eq!(response.status(), 400);
     println!("Response body: {:?}", response.text().await.unwrap());
 }
+
+#[tokio::test]
+async fn test_stream_handler() {
+    let client = Client::new();
+    let test_data = "Hello from the stream!";
+
+    let response = client
+        .post(format!("{}/stream_handler", BASE_URL))
+        .body(test_data.to_string())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    let body = response.text().await.unwrap();
+    assert_eq!(body, test_data);
+}

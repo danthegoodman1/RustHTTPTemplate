@@ -40,6 +40,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         .route("/echo/json_extractor", post(routes::echo_json_extractor))
         .route("/sse", get(routes::sse_res))
         .route("/stream", get(routes::stream_res))
+        .route("/stream_handler", post(routes::stream_handler))
         // .route(
         //     "/{key}",
         //     get(routes::get::get_key).post(routes::post::write_key),
