@@ -1,6 +1,10 @@
 // pub mod echo;
 mod echo;
-use axum::response::sse::{Event, Sse};
+use axum::{
+    extract::State,
+    response::sse::{Event, Sse},
+    Json,
+};
 pub use echo::*;
 
 use axum::{body::Bytes, response::IntoResponse};
@@ -8,8 +12,14 @@ use futures::stream::{self, Stream};
 use std::convert::Infallible;
 use std::time::Duration;
 use tokio_stream::StreamExt;
+use tracing::Value;
 
 use axum::{extract::Request, http::StatusCode};
+
+use crate::{
+    json_rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse},
+    AppError, AppState,
+};
 
 pub async fn sse_res() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     // Create a stream that yields bytes every 100ms
@@ -68,4 +78,14 @@ pub async fn stream_handler(request: Request) -> Result<String, (StatusCode, Str
     println!("full_body: {:?}", String::from_utf8(full_body.to_vec()));
     String::from_utf8(full_body.to_vec())
         .map_err(|err| (StatusCode::BAD_REQUEST, format!("Invalid UTF-8: {}", err)))
+}
+
+pub async fn json_rpc(
+    State(state): State<AppState>, // state must be listed first in params
+    Json(payload): Json<JsonRpcRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    match state.registry.handle_request(payload).await {
+        Ok(response) => Ok(Json(serde_json::to_value(response).unwrap())),
+        Err(error) => Ok(Json(serde_json::to_value(error).unwrap())),
+    }
 }
