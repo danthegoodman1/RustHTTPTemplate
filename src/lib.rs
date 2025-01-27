@@ -17,6 +17,7 @@ use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
 use tracing::{error, info};
 
 pub mod grpc;
+pub mod json_rpc;
 mod rate_limiter;
 mod routes;
 use rate_limiter::{ip_rate_limiter, RateLimiter};
@@ -41,6 +42,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         .route("/sse", get(routes::sse_res))
         .route("/stream", get(routes::stream_res))
         .route("/stream_handler", post(routes::stream_handler))
+        .route("/json_rpc", post(routes::json_rpc))
         // .route(
         //     "/{key}",
         //     get(routes::get::get_key).post(routes::post::write_key),

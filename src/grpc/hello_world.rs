@@ -1,4 +1,4 @@
-use futures::stream::{self, StreamExt};
+use futures::stream::StreamExt;
 use prost::Message;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
