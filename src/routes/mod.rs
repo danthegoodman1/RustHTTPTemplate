@@ -89,18 +89,12 @@ pub async fn json_rpc(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let res: Result<serde_json::Value, anyhow::Error> = match payload.method.as_str() {
         "my_rpc" => match my_rpc(serde_json::from_value(payload.params).unwrap()).await {
-            Ok(mut response) => {
-                response.id = payload.id.clone();
-                Ok(response.into())
-            }
+            Ok(response) => Ok(response.with_id(payload.id.clone()).into()),
             Err(e) => Err(e),
         },
         "greeting_rpc" => {
             match greeting_rpc(serde_json::from_value(payload.params).unwrap()).await {
-                Ok(mut response) => {
-                    response.id = payload.id.clone();
-                    Ok(response.into())
-                }
+                Ok(response) => Ok(response.with_id(payload.id.clone()).into()),
                 Err(e) => Err(e),
             }
         }

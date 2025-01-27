@@ -172,7 +172,7 @@ async fn test_json_rpc_my_rpc() {
     let client = Client::new();
     let payload = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
-        id: Some(json!("1")),
+        id: Some(1),
         method: "my_rpc".to_string(),
         params: serde_json::to_value(MyRpcParams {
             name: "Alice".to_string(),
@@ -192,7 +192,7 @@ async fn test_json_rpc_my_rpc() {
 
     let expected: JsonRpcResponseSuccess<MyRpcResponse> = JsonRpcResponseSuccess {
         jsonrpc: "2.0".to_string(),
-        id: Some(json!("1")),
+        id: Some(1),
         result: MyRpcResponse {
             message: "Hello, Alice!".to_string(),
         }
@@ -215,7 +215,7 @@ async fn test_json_rpc_greeting_rpc() {
     for (language, expected_greeting, expected_translated) in test_cases {
         let payload = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
-            id: Some(json!("1")),
+            id: Some(1),
             method: "greeting_rpc".to_string(),
             params: serde_json::to_value(GreetingRpcParams {
                 name: "Bob".to_string(),
@@ -236,7 +236,7 @@ async fn test_json_rpc_greeting_rpc() {
 
         let expected: JsonRpcResponseSuccess<GreetingRpcResponse> = JsonRpcResponseSuccess {
             jsonrpc: "2.0".to_string(),
-            id: Some(json!("1")),
+            id: Some(1),
             result: GreetingRpcResponse {
                 greeting: expected_greeting.to_string(),
                 translated: expected_translated,

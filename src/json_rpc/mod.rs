@@ -15,22 +15,36 @@ pub struct JsonRpcRequest {
     pub jsonrpc: String,
     pub method: String,
     pub params: Value,
-    pub id: Option<Value>,
+    pub id: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct JsonRpcResponseSuccess<T: Serialize> {
     pub jsonrpc: String,
     pub result: T,
-    pub id: Option<Value>,
+    pub id: Option<i64>,
+}
+
+impl<T: Serialize> JsonRpcResponseSuccess<T> {
+    pub fn with_id(mut self, id: Option<i64>) -> Self {
+        self.id = id;
+        self
+    }
 }
 
 #[derive(Debug, Serialize)]
 pub struct JsonRpcResponseError<T: Serialize> {
     pub jsonrpc: String,
-    pub id: Option<Value>,
+    pub id: Option<i64>,
     pub data: Option<T>,
     pub code: i64,
+}
+
+impl<T: Serialize> JsonRpcResponseError<T> {
+    pub fn with_id(mut self, id: Option<i64>) -> Self {
+        self.id = id;
+        self
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -41,7 +55,7 @@ pub struct JsonRpcResponse {
     pub result: Option<Value>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<Value>,
+    pub id: Option<i64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
