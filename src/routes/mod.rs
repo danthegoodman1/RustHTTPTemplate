@@ -10,6 +10,7 @@ pub use echo::*;
 use axum::{body::Bytes, response::IntoResponse};
 use futures::stream::{self, Stream};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::convert::Infallible;
 use std::time::Duration;
 use tokio_stream::StreamExt;
@@ -17,8 +18,10 @@ use tokio_stream::StreamExt;
 use axum::{extract::Request, http::StatusCode};
 
 use crate::{
-    json_rpc::{self, JsonRpcRequest, JsonRpcResponse},
-    AppState,
+    json_rpc::{
+        self, JsonRpcRequest, JsonRpcResponse, JsonRpcResponseError, JsonRpcResponseSuccess,
+    },
+    AppError, AppState,
 };
 
 pub async fn sse_res() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
@@ -83,43 +86,44 @@ pub async fn stream_handler(request: Request) -> Result<String, (StatusCode, Str
 pub async fn json_rpc(
     State(_state): State<AppState>, // state must be listed first in params
     Json(payload): Json<JsonRpcRequest>,
-) -> Json<impl Serialize> {
-    match payload.method.as_str() {
+) -> Result<Json<serde_json::Value>, AppError> {
+    let res: Result<serde_json::Value, anyhow::Error> = match payload.method.as_str() {
         "my_rpc" => match my_rpc(serde_json::from_value(payload.params).unwrap()).await {
-            Ok(response) => Json(serde_json::to_value(response).unwrap()),
-            Err(e) => Json(
-                serde_json::to_value(JsonRpcResponse::Error {
-                    jsonrpc: payload.jsonrpc,
-                    id: payload.id,
-                    data: Some::<json_rpc::InternalError>(e.into()),
-                    code: json_rpc::INTERNAL_ERROR,
-                })
-                .unwrap(),
-            ),
+            Ok(mut response) => {
+                response.id = payload.id.clone();
+                Ok(response.into())
+            }
+            Err(e) => Err(e),
         },
         "greeting_rpc" => {
             match greeting_rpc(serde_json::from_value(payload.params).unwrap()).await {
-                Ok(response) => Json(serde_json::to_value(response).unwrap()),
-                Err(e) => Json(
-                    serde_json::to_value(JsonRpcResponse::Error {
-                        jsonrpc: payload.jsonrpc,
-                        id: payload.id,
-                        data: Some::<json_rpc::InternalError>(e.into()),
-                        code: json_rpc::INTERNAL_ERROR,
-                    })
-                    .unwrap(),
-                ),
+                Ok(mut response) => {
+                    response.id = payload.id.clone();
+                    Ok(response.into())
+                }
+                Err(e) => Err(e),
             }
         }
-        _ => Json(
-            serde_json::to_value(JsonRpcResponse::Error {
+        _ => Ok(JsonRpcResponseError {
+            jsonrpc: payload.jsonrpc.clone(),
+            id: payload.id.clone(),
+            data: Some::<json_rpc::InternalError>(anyhow::anyhow!("Method not found").into()),
+            code: json_rpc::METHOD_NOT_FOUND,
+        }
+        .into()),
+    };
+
+    match res {
+        Ok(response) => Ok(Json(response)),
+        Err(e) => Ok(Json(
+            JsonRpcResponseError {
                 jsonrpc: payload.jsonrpc,
                 id: payload.id,
-                data: Some::<json_rpc::InternalError>(anyhow::anyhow!("Method not found").into()),
-                code: json_rpc::METHOD_NOT_FOUND,
-            })
-            .unwrap(),
-        ),
+                data: Some(json!({ "error": e.to_string() })),
+                code: json_rpc::INTERNAL_ERROR,
+            }
+            .into(),
+        )),
     }
 }
 
@@ -133,10 +137,12 @@ pub struct MyRpcResponse {
     pub message: String,
 }
 
-pub async fn my_rpc(params: MyRpcParams) -> Result<MyRpcResponse, anyhow::Error> {
-    Ok(MyRpcResponse {
+pub async fn my_rpc(
+    params: MyRpcParams,
+) -> Result<JsonRpcResponseSuccess<MyRpcResponse>, anyhow::Error> {
+    Ok(JsonRpcResponseSuccess::from(MyRpcResponse {
         message: format!("Hello, {}!", params.name),
-    })
+    }))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -151,15 +157,17 @@ pub struct GreetingRpcResponse {
     pub translated: bool,
 }
 
-async fn greeting_rpc(params: GreetingRpcParams) -> Result<GreetingRpcResponse, anyhow::Error> {
+async fn greeting_rpc(
+    params: GreetingRpcParams,
+) -> Result<JsonRpcResponseSuccess<GreetingRpcResponse>, anyhow::Error> {
     let greeting = match params.language.to_lowercase().as_str() {
         "spanish" => format!("¡Hola, {}!", params.name),
         "french" => format!("Bonjour, {}!", params.name),
         _ => format!("Hello, {}!", params.name),
     };
 
-    Ok(GreetingRpcResponse {
+    Ok(JsonRpcResponseSuccess::from(GreetingRpcResponse {
         greeting,
         translated: params.language.to_lowercase() != "english",
-    })
+    }))
 }
