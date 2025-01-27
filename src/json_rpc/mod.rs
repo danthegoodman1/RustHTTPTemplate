@@ -155,7 +155,7 @@ impl<T: Serialize> From<JsonRpcResponseError<T>> for JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
             result: None,
             id: e.id,
-            data: None,
+            data: e.data.map(|d| serde_json::to_value(d).unwrap()),
             code: Some(e.code),
         }
     }

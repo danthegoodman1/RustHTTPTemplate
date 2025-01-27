@@ -1,6 +1,8 @@
 use futures_util::stream::StreamExt;
 use reqwest::Client;
-use rust_http_template::json_rpc::{JsonRpcRequest, JsonRpcResponse, JsonRpcResponseSuccess};
+use rust_http_template::json_rpc::{
+    JsonRpcRequest, JsonRpcResponse, JsonRpcResponseError, JsonRpcResponseSuccess,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -199,6 +201,38 @@ async fn test_json_rpc_my_rpc() {
         .into(),
     };
     assert_eq!(response_json, serde_json::to_value(expected).unwrap());
+
+    // Test error case
+    let error_payload = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(1),
+        method: "my_rpc".to_string(),
+        params: serde_json::to_value(MyRpcParams {
+            name: "error".to_string(),
+        })
+        .unwrap(),
+    };
+
+    let response = client
+        .post(format!("{}/json_rpc", BASE_URL))
+        .json(&error_payload)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    let response_json = response.json::<serde_json::Value>().await.unwrap();
+
+    let expected_error = JsonRpcResponseError {
+        jsonrpc: "2.0".to_string(),
+        id: Some(1),
+        data: Some(json!({
+            "error": "Internal error"
+        })),
+        code: -32603,
+    };
+
+    assert_eq!(response_json, serde_json::to_value(expected_error).unwrap());
 }
 
 #[tokio::test]

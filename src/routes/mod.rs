@@ -132,6 +132,15 @@ pub struct MyRpcResponse {
 }
 
 pub async fn my_rpc(params: MyRpcParams) -> Result<JsonRpcResponse, anyhow::Error> {
+    if params.name == "error" {
+        return Ok(JsonRpcResponseError {
+            jsonrpc: "2.0".to_string(),
+            id: Some(1),
+            data: Some(json!({ "error": "Internal error" })),
+            code: json_rpc::INTERNAL_ERROR,
+        }
+        .into());
+    }
     Ok(JsonRpcResponseSuccess::from(MyRpcResponse {
         message: format!("Hello, {}!", params.name),
     })
