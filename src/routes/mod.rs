@@ -83,11 +83,11 @@ pub async fn stream_handler(request: Request) -> Result<String, (StatusCode, Str
 pub async fn json_rpc(
     State(_state): State<AppState>, // state must be listed first in params
     Json(payload): Json<JsonRpcRequest>,
-) -> Result<Json<impl Serialize>, AppError> {
+) -> Json<impl Serialize> {
     match payload.method.as_str() {
         "my_rpc" => match my_rpc(serde_json::from_value(payload.params).unwrap()).await {
-            Ok(response) => Ok(Json(serde_json::to_value(response).unwrap())),
-            Err(e) => Ok(Json(
+            Ok(response) => Json(serde_json::to_value(response).unwrap()),
+            Err(e) => Json(
                 serde_json::to_value(JsonRpcResponse::Error {
                     jsonrpc: payload.jsonrpc,
                     id: payload.id,
@@ -95,12 +95,12 @@ pub async fn json_rpc(
                     code: json_rpc::INTERNAL_ERROR,
                 })
                 .unwrap(),
-            )),
+            ),
         },
         "greeting_rpc" => {
             match greeting_rpc(serde_json::from_value(payload.params).unwrap()).await {
-                Ok(response) => Ok(Json(serde_json::to_value(response).unwrap())),
-                Err(e) => Ok(Json(
+                Ok(response) => Json(serde_json::to_value(response).unwrap()),
+                Err(e) => Json(
                     serde_json::to_value(JsonRpcResponse::Error {
                         jsonrpc: payload.jsonrpc,
                         id: payload.id,
@@ -108,13 +108,18 @@ pub async fn json_rpc(
                         code: json_rpc::INTERNAL_ERROR,
                     })
                     .unwrap(),
-                )),
+                ),
             }
         }
-        _ => Err(AppError::CustomCode(
-            anyhow::anyhow!("Method not found"),
-            StatusCode::BAD_REQUEST,
-        )),
+        _ => Json(
+            serde_json::to_value(JsonRpcResponse::Error {
+                jsonrpc: payload.jsonrpc,
+                id: payload.id,
+                data: Some::<json_rpc::InternalError>(anyhow::anyhow!("Method not found").into()),
+                code: json_rpc::METHOD_NOT_FOUND,
+            })
+            .unwrap(),
+        ),
     }
 }
 
