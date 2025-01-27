@@ -1,8 +1,6 @@
 use futures_util::stream::StreamExt;
 use reqwest::Client;
-use rust_http_template::json_rpc::{
-    JsonRpcRequest, JsonRpcResponse, JsonRpcResponseError, JsonRpcResponseSuccess,
-};
+use rust_http_template::json_rpc::{JsonRpcRequest, JsonRpcResponseError, JsonRpcResponseSuccess};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
