@@ -18,7 +18,7 @@ use axum::{extract::Request, http::StatusCode};
 
 use crate::{
     json_rpc::{self, JsonRpcRequest, JsonRpcResponse},
-    AppError, AppState,
+    AppState,
 };
 
 pub async fn sse_res() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
