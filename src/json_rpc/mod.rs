@@ -64,6 +64,13 @@ pub struct JsonRpcResponse {
     pub code: Option<i64>,
 }
 
+impl JsonRpcResponse {
+    pub fn with_id(mut self, id: Option<i64>) -> Self {
+        self.id = id;
+        self
+    }
+}
+
 impl IntoResponse for JsonRpcResponse {
     fn into_response(self) -> Response {
         match serde_json::to_string(&self) {

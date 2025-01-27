@@ -131,12 +131,11 @@ pub struct MyRpcResponse {
     pub message: String,
 }
 
-pub async fn my_rpc(
-    params: MyRpcParams,
-) -> Result<JsonRpcResponseSuccess<MyRpcResponse>, anyhow::Error> {
+pub async fn my_rpc(params: MyRpcParams) -> Result<JsonRpcResponse, anyhow::Error> {
     Ok(JsonRpcResponseSuccess::from(MyRpcResponse {
         message: format!("Hello, {}!", params.name),
-    }))
+    })
+    .into())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -151,9 +150,7 @@ pub struct GreetingRpcResponse {
     pub translated: bool,
 }
 
-async fn greeting_rpc(
-    params: GreetingRpcParams,
-) -> Result<JsonRpcResponseSuccess<GreetingRpcResponse>, anyhow::Error> {
+async fn greeting_rpc(params: GreetingRpcParams) -> Result<JsonRpcResponse, anyhow::Error> {
     let greeting = match params.language.to_lowercase().as_str() {
         "spanish" => format!("¡Hola, {}!", params.name),
         "french" => format!("Bonjour, {}!", params.name),
@@ -163,5 +160,6 @@ async fn greeting_rpc(
     Ok(JsonRpcResponseSuccess::from(GreetingRpcResponse {
         greeting,
         translated: params.language.to_lowercase() != "english",
-    }))
+    })
+    .into())
 }
