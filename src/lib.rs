@@ -1,7 +1,6 @@
 use axum::routing::post;
 use axum::{middleware, routing::get};
 use grpc::hello_world::helloworld::greeter_server;
-use json_rpc::RpcRegistry;
 use std::net::SocketAddr;
 
 use std::sync::Arc;
@@ -26,13 +25,11 @@ use rate_limiter::{ip_rate_limiter, RateLimiter};
 #[derive(Clone)]
 struct AppState {
     rate_limiter: Arc<RateLimiter>,
-    registry: Arc<RpcRegistry>,
 }
 
 pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
     let state = AppState {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
-        registry: json_rpc::get_registry().lock().unwrap().clone(),
     };
 
     let greeter_service = grpc::hello_world::MyGreeter::default();

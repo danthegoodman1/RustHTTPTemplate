@@ -1390,7 +1390,6 @@ name = "rust_http_template"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "axum 0.8.1",
  "axum-extra",
  "futures",
