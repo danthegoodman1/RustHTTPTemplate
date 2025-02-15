@@ -4,6 +4,7 @@ use validator::Validate;
 
 use crate::{AppError, AppState};
 
+#[axum::debug_handler] // super helpful for debugging
 pub async fn echo_json(
     State(_state): State<AppState>,
     payload: Json<serde_json::Value>,
