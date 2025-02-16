@@ -9,11 +9,11 @@ async fn main() {
     let subscriber = tracing_subscriber::registry().with(
         tracing_subscriber::fmt::layer()
             .compact()
+            // .json()
             .with_file(true)
             .with_line_number(true)
             .with_span_events(FmtSpan::CLOSE)
             .with_target(false)
-            // .json()
             .with_filter(
                 tracing_subscriber::filter::Targets::new()
                     .with_target("h2", Level::INFO) // filter out h2 logs
