@@ -18,7 +18,7 @@ async fn main() {
                 tracing_subscriber::filter::Targets::new()
                     .with_target("h2", Level::INFO) // filter out h2 logs
                     .with_target("tower", Level::INFO) // filter out tower debug logs
-                    .with_default(Level::DEBUG),
+                    .with_default(Level::INFO),
             ),
     );
 

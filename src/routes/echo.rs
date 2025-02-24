@@ -1,5 +1,6 @@
 use axum::{extract::State, Json};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 use validator::Validate;
 
 use crate::{AppError, AppState};
@@ -9,6 +10,7 @@ pub async fn echo_json(
     State(_state): State<AppState>,
     payload: Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    info!("echo_json");
     Ok(payload)
 }
 

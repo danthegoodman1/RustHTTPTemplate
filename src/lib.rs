@@ -1,6 +1,7 @@
 use axum::routing::post;
 use axum::{middleware, routing::get};
 use grpc::hello_world::helloworld::greeter_server;
+use hyper::body::Body;
 use std::net::SocketAddr;
 
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
-use tracing::{error, info};
+use tracing::{error, info, info_span, trace_span, Instrument};
 
 pub mod grpc;
 pub mod json_rpc;
@@ -49,6 +50,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         // )
         .layer(
             ServiceBuilder::new()
+                .layer(middleware::from_fn(trace_http))
                 // https://github.com/tokio-rs/axum/discussions/987
                 .layer(HandleErrorLayer::new(|err: BoxError| async move {
                     // turns layer errors into HTTP errors
@@ -135,4 +137,55 @@ impl AppError {
             StatusCode::TOO_MANY_REQUESTS,
         )
     }
+}
+
+/// This middleware adds a request id to the span, and logs the path, request body size, and response size.
+/// Uses tracing gymnastics... if this span is not included then the req_id is not propagated.
+pub async fn trace_http(req: axum::extract::Request, next: axum::middleware::Next) -> Response {
+    // Extract HTTP method and URI path.
+    let method = req.method().clone();
+    let path = req.uri().path().to_owned();
+
+    // Attempt to read the request body size from the "Content-Length" header.
+    let req_body_size = req
+        .headers()
+        .get("content-length")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("?");
+
+    // Use the provided request id or generate a new one if none is present.
+    let req_id = req
+        .headers()
+        .get("X-Request-ID")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+    // Create a tracing span that includes our custom fields.
+    let span = info_span!(
+        target: "req_handler",
+        "req_handler",
+        req_id = %req_id, // % means display formatting
+        method = %method,
+        path = %path,
+        req_size = %req_body_size,
+        res_size = tracing::field::Empty,
+    );
+
+    // wrap it so we can record the response body size in the span
+    let response = async {
+        let response = next.run(req).await;
+        // Try extracting the response body size from the "Content-Length" header.
+        let res_body_size: String = response
+            .size_hint()
+            .upper()
+            .and_then(|s| Some(s.to_string()))
+            .unwrap_or("?".to_string());
+        span.record("res_size", &format_args!("{}", res_body_size)); // prevent debug formatting
+        response
+    }
+    .instrument(span.clone())
+    .await;
+
+    response
 }
