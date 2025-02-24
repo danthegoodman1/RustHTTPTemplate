@@ -15,7 +15,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use tower::{buffer::BufferLayer, BoxError, ServiceBuilder};
-use tracing::{error, info, info_span, trace_span, Instrument};
+use tracing::{error, info, info_span, Instrument};
 
 pub mod grpc;
 pub mod json_rpc;
