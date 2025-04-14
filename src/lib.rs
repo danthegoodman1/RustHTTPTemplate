@@ -40,6 +40,10 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
         .route("/echo/json_extractor", post(routes::echo_json_extractor))
+        .route(
+            "/echo/nested_function_tracing",
+            post(routes::echo_nested_function_tracing),
+        )
         .route("/sse", get(routes::sse_res))
         .route("/stream", get(routes::stream_res))
         .route("/stream_handler", post(routes::stream_handler))

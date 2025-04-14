@@ -278,3 +278,23 @@ async fn test_json_rpc_greeting_rpc() {
         assert_eq!(response_json, serde_json::to_value(expected).unwrap());
     }
 }
+
+#[tokio::test]
+async fn test_echo_nested_function_tracing() {
+    let client = Client::new();
+    let test_json = json!({
+        "message": "nested tracing",
+        "value": 123
+    });
+
+    let response = client
+        .post(format!("{}/echo/nested_function_tracing", BASE_URL))
+        .json(&test_json)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), 200);
+    let response_json = response.json::<serde_json::Value>().await.unwrap();
+    assert_eq!(response_json, test_json);
+}
