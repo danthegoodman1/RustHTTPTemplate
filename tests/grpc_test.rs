@@ -7,7 +7,7 @@ use tonic::Request;
 #[tokio::test]
 async fn test_grpc_hello() -> Result<(), Box<dyn std::error::Error>> {
     // Create a gRPC client
-    let mut client = GreeterClient::connect("http://0.0.0.0:50051").await?;
+    let mut client = GreeterClient::connect("http://0.0.0.0:8080").await?;
 
     // Create a new request
     let request = tonic::Request::new(HelloRequest {
@@ -25,7 +25,7 @@ async fn test_grpc_hello() -> Result<(), Box<dyn std::error::Error>> {
 #[tokio::test]
 async fn test_grpc_stream_hello() -> Result<(), Box<dyn std::error::Error>> {
     // Create a gRPC client
-    let mut client = GreeterClient::connect("http://0.0.0.0:50051").await?;
+    let mut client = GreeterClient::connect("http://0.0.0.0:8080").await?;
 
     // Create a stream of requests
     let requests = vec![

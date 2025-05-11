@@ -6,6 +6,7 @@ use std::net::SocketAddr;
 
 use std::sync::Arc;
 use std::time::Duration;
+use tonic::service::Routes;
 use tonic::transport::Server;
 
 use axum::{
@@ -28,14 +29,16 @@ struct AppState {
     rate_limiter: Arc<RateLimiter>,
 }
 
-pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
+pub async fn start(http_addr: &str) {
+    let greeter_service = grpc::hello_world::MyGreeter::default();
+    let grpc_svc = Routes::new(greeter_server::GreeterServer::new(greeter_service))
+        .prepare()
+        .into_axum_router()
+        .with_state(());
+
     let state = AppState {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
     };
-
-    let greeter_service = grpc::hello_world::MyGreeter::default();
-    let grpc_service =
-        Server::builder().add_service(greeter_server::GreeterServer::new(greeter_service));
 
     let app = axum::Router::new()
         .route("/echo/json", post(routes::echo_json))
@@ -52,6 +55,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         //     "/{key}",
         //     get(routes::get::get_key).post(routes::post::write_key),
         // )
+        .merge(grpc_svc)
         .layer(
             ServiceBuilder::new()
                 .layer(middleware::from_fn(trace_http))
@@ -75,7 +79,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
         )
         .with_state(state);
 
-    info!("Starting on http://{} and grpc://{}", http_addr, grpc_addr);
+    info!("Starting on {}", http_addr);
     let axum_listener = tokio::net::TcpListener::bind(http_addr).await.unwrap();
 
     let axum_server = axum::serve(axum_listener, app).with_graceful_shutdown(async {
@@ -84,14 +88,7 @@ pub async fn start(http_addr: &str, grpc_addr: SocketAddr) {
             .expect("Failed to install Ctrl+C handler");
         info!("Received shutdown signal");
     });
-    let grpc_server = grpc_service.serve_with_shutdown(grpc_addr, async {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to install Ctrl+C handler");
-        info!("Received shutdown signal");
-    });
-
-    _ = tokio::join!(axum_server, grpc_server);
+    axum_server.await.unwrap();
 }
 
 // Make our own error that wraps `anyhow::Error`.
