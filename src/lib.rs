@@ -2,12 +2,10 @@ use axum::routing::post;
 use axum::{middleware, routing::get};
 use grpc::hello_world::helloworld::greeter_server;
 use hyper::body::Body;
-use std::net::SocketAddr;
 
 use std::sync::Arc;
 use std::time::Duration;
 use tonic::service::Routes;
-use tonic::transport::Server;
 
 use axum::{
     error_handling::HandleErrorLayer,
