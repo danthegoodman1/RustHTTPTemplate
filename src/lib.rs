@@ -29,10 +29,13 @@ struct AppState {
 
 pub async fn start(http_addr: &str) {
     let greeter_service = grpc::hello_world::MyGreeter::default();
-    let grpc_svc = Routes::new(greeter_server::GreeterServer::new(greeter_service))
-        .prepare()
-        .into_axum_router()
-        .with_state(());
+    let grpc_svc = Routes::new(
+        greeter_server::GreeterServer::new(greeter_service)
+            .max_decoding_message_size(1024 * 1024 * 1), // 1MB
+    )
+    .prepare()
+    .into_axum_router()
+    .with_state(());
 
     let state = AppState {
         rate_limiter: Arc::new(RateLimiter::new(10, Duration::from_secs(60))), // 10 requests per minute
